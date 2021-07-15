@@ -1,26 +1,14 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <BappCal backend="http://localhost" />
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import BappCal from './components/BappCal.vue'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    BappCal
   }
 }
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
