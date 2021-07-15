@@ -3,6 +3,7 @@ import App from './App.vue'
 import './assets/tailwind.css'
 import axios from 'axios'
 
+// TODO: move this to an .env file
 const API_KEY = 'Guw1d5estrzJUm0Y2Q8l67NjlIQ9fjqKKn7AGqsk'
 // const API_KEY = 'JGamVnWbwBRFKeELp8gHVEdgp7OmP65yhoFVDFRo'
 
