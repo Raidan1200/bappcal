@@ -1,8 +1,11 @@
 <template>
   <div>
     <div v-for="product in products" :key="product.id">
-      <h4 class="text-xl">{{ product.name }}</h4>
-      <button @click="selectProduct(product)">Select</button>
+      <h4 class="text-xl">Product: {{ product.name }}</h4>
+      <button
+        @click="toggleProduct(product)"
+        :class="{ 'text-blue-500' : product === selectedProduct }"
+      >Select</button>
     </div>
   </div>
 </template>
@@ -23,22 +26,15 @@ export default {
     }
   },
   methods: {
-    selectProduct(product) {
-      if (this.selectedProduct === product) {
+    toggleProduct(product) {
+      if (product === this.selectedProduct) {
         this.selectedProduct = null
+        this.$emit('select-product', null)
       } else {
         this.selectedProduct = product
         this.$emit('select-product', product)
       }
-    },
-    deselectProducts() {
-      this.$emit('select-product', null)
-      this.selectedProduct = null
     }
   }
 }
 </script>
-
-<style>
-
-</style>
