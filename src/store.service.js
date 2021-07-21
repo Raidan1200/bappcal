@@ -1,30 +1,36 @@
 import { ref, readonly, computed } from 'vue'
 
-const venue = {}
-
 const state = ref({
-  isLoading: false,
-  data: null,
+  bookings: [],
+  error: null,
 })
 
 const getters = {
-  isLoading: () => {
-    return computed(() => state.value.isLoading)
+  getBookings: () => {
+    return computed(() => state.value.bookings)
   },
-  getVenue: () => venue,
-  getRooms: () => venue.rooms,
-  getRoom: (id) => venue.rooms.find((room) => room.id === id),
-  getProducts: (roomId) => venue.rooms.find((room) => room.id === roomId).products,
+  getError: () => {
+    return computed(() => state.value.error)
+  }
 }
 
 const actions = {
-  loadVenue: async (loader) => {
-    state.value.loading = true
-    state.value.data = await loader()
-    state.value.loading = false
+  hasBooking: (roomId) => {
+    return !! state.value.bookings.find(booking => booking.roomId === roomId)
   },
-  setLoading: (state) => {
-    state.value.loading = state
+  removeBooking: (roomId) => {
+    state.value.bookings.splice(
+      state.value.bookings.indexOf(booking => booking.room === roomId), 1
+    )
+  },
+  addOrUpdateBooking: ({ roomId, productId, booking }) => {
+    if (actions.hasBooking(roomId)) {
+      actions.removeBooking(roomId)
+    }
+    state.value.bookings.push({ roomId, productId, booking })
+  },
+  setError: (message) => {
+    state.value.error = message
   }
 }
 

@@ -2,6 +2,7 @@
   <div class="m-6 p-6 rounded-xl bg-white">
     <h1 class="text-4xl">{{ venue.name }} Buchungsportal</h1>
     <div v-if="loading">Loading</div>
+    <div v-else-if="error">There was a problem. Try again later</div>
     <div v-else>
 
       <!-- List of rooms -->
@@ -11,7 +12,6 @@
           <div v-if="selectedRoom === room">
             <button @click="toggleRoom(room)">Back</button>
             <BappProducts
-              v-if="selectedRoom.id === 1"
               :products="room.products"
               @selectProduct="selectedProduct = $event"
               @deselectProducts="selectedProduct = null"
@@ -43,44 +43,57 @@
           :product="room(2).products[0]"
         />
       </div>
-
-      <button @click="placeOrder">Order NOW</button>
-
     </div>
+    <div v-if="getError">{{ getError() }}</div>
+
+    <BappCustomerForm
+      v-if="showCustomerForm"
+      @setCustomer="handleSubmit($event)"
+    />
+
+    <button
+      v-if="!showCustomerForm"
+      @click="showCustomerForm = true"
+      :disabled="getError()"
+      :class="{ 'bg-red-300' : getError() }"
+    >Kundendaten eingeben</button>
+    {{ bla() }}
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import store from './store.service'
 import BappProducts from './components/BappProducts'
 import BappCalendar from './components/BappCalendar'
+import BappCustomerForm from './components/BappCustomerForm'
 
 export default {
   name: 'BappCal',
   components: {
     BappProducts,
-    BappCalendar
+    BappCalendar,
+    BappCustomerForm
   },
   data() {
     return {
       loading: true,
+      error: false,
       venue: {},
       selectedRoom: null,
       selectedProduct: null,
       showCurling: false,
-      bookings: [
-        { room: 1, product: 1, amount: 30, starts_at: '', ends_at: '' },
-        { room: 2, product: 2, amount: 2, starts_at: '', ends_at: '' },
-      ],
-      customer: {
-        firstName: '',
-        lastName: '',
-      }
+      showCustomerForm: false,
     }
   },
   async mounted() {
-    const venue = await axios.get('config')
-    this.venue = venue.data
+    try {
+      const venue = await axios.get('config')
+      this.venue = venue.data
+    } catch (e) {
+      console.log(e)
+      this.error = true
+    }
 
     this.loading = false
   },
@@ -91,17 +104,37 @@ export default {
     toggleRoom(room) {
       if (room === this.selectedRoom) {
         this.selectedRoom = null
+        this.selectedProduct = null
       } else {
         this.selectedRoom = room
+        if (this.selectedRoom === this.room(2)) {
+          console.log('blabla');
+          this.selectedProduct = this.room(2).products[0]
+        }
       }
     },
-    async placeOrder() {
+    getError() {
+      return store().getError().value
+    },
+    async handleSubmit($event) {
       const response = await axios.post(`venues/${this.venue.id}/orders`, {
-        order: this.bookings,
-        customer: this.customer
+        bookings: store().getBookings().value,
+        customer: $event
       })
+
       console.log(response)
-    }
-  }
+    },
+    bla() {
+      return store().getBookings().value
+    },
+  },
+  // watch: {
+  //   showCurling(newValue) {
+  //     console.log(newValue);
+  //     if (newValue === false) {
+  //       store().removeBooking(2)
+  //     }
+  //   }
+  // }
 }
 </script>

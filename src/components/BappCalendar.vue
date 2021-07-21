@@ -1,20 +1,37 @@
 <template>
-  <div>
-    <h4>Calendar</h4>
-    <div>Dates: {{ product.starts_at }} - {{ product.ends_at }}</div>
+  <div class="relative">
+    <div v-if="loading" class="absolute loader ease-linear rounded-full border-8 border-t-8 border-gray-200 flex justify-center align-middle h-24 w-24"></div>
     <div v-if="bookings && calendar">
+      <div v-if="setTime === 'start'">Startzeit wählen</div>
+      <div v-else>Endzeit wählen</div>
       <table>
         <thead>
           <tr class="bg-gray-200">
             <td>Day / Hour</td>
-            <td v-for="(hour, idx) in calendar[0]" :key="idx">
+            <td
+              v-for="(hour, idx) in calendar[0]"
+              :key="idx"
+              class="text-center"
+            >
               {{ hour.datetime.hour() }}
             </td>
           </tr>
         </thead>
         <tr v-for="(day, dIdx) in calendar" :key="dIdx">
-          <td>{{ day[0].datetime.format('dd D.M.') }}</td>
-          <td v-for="(hour, hIdx) in day" :key="hIdx">
+          <td
+            class="hover:bg-gray-300"
+            @click="setBookingDay(day[0].datetime, dIdx)"
+          >
+            {{ day[0].datetime.format('dd D.M.') }}
+          </td>
+          <td
+            v-for="(hour, hIdx) in day"
+            :key="hIdx"
+            @click="setBooking(hour.datetime)"
+            class="px-2 hover:bg-gray-200"
+            :class="hour.color"
+          >
+            <div class="text-gray-400">{{ hour.datetime.format('HH:mm') }}</div>
             {{ hour.free }}
           </td>
         </tr>
@@ -22,21 +39,47 @@
 
       <div>
         <button
-          v-if="showButton('earlier')"
+          v-if="showButton('prev')"
           @click="moveWeek('prev')"
         >Früher</button>
         <button
-          v-if="showButton('later')"
+          v-if="showButton('next')"
           @click="moveWeek('next')"
         >Später</button>
       </div>
 
       <label for="starts_at">Von</label>
-      <input v-model="booking.starts_at" type="number" name="starts_at" id="starts_at">
+      <input
+        type="number"
+        name="starts_at"
+        id="starts_at"
+        :value="booking.starts_at?.hour()"
+        @input="updateStartsAt($event)"
+        :min="product.opens_at.substr(0, 2)"
+        :max="product.closes_at.substr(0, 2)"
+        :class="{ 'bg-green-100' : setTime === 'start' }"
+      >
       <label for="ends_at">Bis</label>
-      <input v-model="booking.ends_at" type="number" name="ends_at" id="ends_at">
-      <label for="amount">Menge</label>
-      <input v-model="booking.amount" type="number" name="amount" id="amount">
+      <input
+        type="number"
+        name="ends_at"
+        id="ends_at"
+        :value="booking.ends_at?.hour()"
+        @input="updateEndsAt($event)"
+        :min="product.opens_at.substr(0, 2)"
+        :max="product.closes_at.substr(0, 2)"
+        :class="{ 'bg-green-100' : setTime === 'end' }"
+      >
+      <label for="quantity">Menge</label>
+      <input
+        :value="booking.quantity"
+        @input="updateQuantity($event)"
+        type="number"
+        name="quantity"
+        id="quantity"
+        :min="product.min_occupancy ?? 0"
+        :max="room.capacity"
+      >
     </div>
   </div>
 </template>
@@ -44,6 +87,7 @@
 <script>
 import axios from 'axios'
 import dayjs from 'dayjs'
+import store from '../store.service'
 
 export default {
   name: 'BappCalendar',
@@ -59,54 +103,103 @@ export default {
   },
   data() {
     return {
+      loading: false,
       calendar: null,
       offset: 0,
+      setTime: 'start',
       bookings: null,
       booking: {
         starts_at: null,
         ends_at: null,
-        amount: 0,
+        quantity: this.product.min_occupancy ?? 0,
+        color: true,
       }
     }
   },
   async mounted() {
-    this.makeCalendar()
+      await this.fetchBookings()
+      this.makeCalendar()
+  },
+  beforeUnmount() {
+    store().removeBooking(this.roomId)
   },
   methods: {
-    async makeCalendar() {
-      this.calendar = await this.applyBookings(
-        this.makeWeek(this.offset)
-      )
+    updateStartsAt(e) {
+      this.booking.starts_at = this.booking.starts_at?.hour(e.target.value) || dayjs(this.product.opens_at)
+      this.makeCalendar()
     },
-    async getBookings() {
-      const from = dayjs().startOf('week').add(this.offset, 'weeks').format('YYYY-MM-DD')
-      const to = dayjs().endOf('week').add(this.offset, 'weeks').format('YYYY-MM-DD')
-
-      const bookings = await axios.get(`rooms/${this.room.id}/bookings?from=${from}&to=${to}`)
-      return bookings.data
+    updateEndsAt(e) {
+      this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.product.closes_at)
+      this.makeCalendar()
     },
-    moveWeek(direction) {
+    updateQuantity(e) {
+      this.booking.quantity = e.target.value
+      this.makeCalendar()
+    },
+    setBookingDay(date) {
+      this.booking.starts_at = this.booking.starts_at.dayOfYear(date.dayOfYear())
+      this.booking.ends_at = this.booking.ends_at.dayOfYear(date.dayOfYear())
+      this.makeCalendar()
+    },
+    setBooking(date) {
+      if (this.setTime === 'start') {
+        this.booking.starts_at = date
+        this.booking.ends_at = date
+      } else {
+        this.booking.ends_at = this.booking.starts_at.hour(date.hour())
+      }
+      this.toggleSetTime()
+      this.makeCalendar()
+    },
+    async moveWeek(direction) {
       if (direction === 'prev') {
         this.offset--
+        if (this.booking.starts_at && this.booking.ends_at) {
+          this.booking.starts_at = this.booking.starts_at.subtract(1, 'week')
+          this.booking.ends_at = this.booking.ends_at.subtract(1, 'week')
+        }
       }
       if (direction === 'next') {
         this.offset++
+        if (this.booking.starts_at && this.booking.ends_at) {
+          this.booking.starts_at = this.booking.starts_at.add(1, 'week')
+          this.booking.ends_at = this.booking.ends_at.add(1, 'week')
+        }
       }
+
+      await this.fetchBookings()
       this.makeCalendar()
     },
     showButton(direction) {
-      if (direction === 'earlier') {
+      if (direction === 'prev') {
         return this.firstCalendarDay().isAfter(this.product.starts_at, 'day')
       }
-      if (direction === 'later') {
+      if (direction === 'next') {
         return this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
       }
+    },
+    toggleSetTime() {
+      this.setTime = (this.setTime === 'start') ? 'end' : 'start'
     },
     firstCalendarDay() {
       return this.calendar[0][0].datetime
     },
     lastCalendarDay() {
       return this.calendar[this.calendar.length - 1][0].datetime
+    },
+    // Calendar
+    makeCalendar() {
+      this.makeWeek()
+      this.applyBookings()
+      if (this.booking.starts_at && this.booking.ends_at) {
+        this.applyBooking(this.booking)
+      }
+      console.log('blablabla');
+      store().addOrUpdateBooking({
+        roomId: this.room.id,
+        productId: this.product.id,
+        booking: this.booking,
+      })
     },
     makeWeek() {
       let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.product.opens_at.split(':'))
@@ -141,21 +234,63 @@ export default {
         endOfDay = pointer.hour(...this.product.closes_at.split(':'))
       }
 
-      return week
+      this.calendar = week
     },
-    async applyBookings(week) {
-      this.bookings = await this.getBookings()
+    // Bookings
+    async fetchBookings() {
+      const from = dayjs().startOf('week').add(this.offset, 'weeks').format('YYYY-MM-DD')
+      const to = dayjs().endOf('week').add(this.offset, 'weeks').format('YYYY-MM-DD')
 
-      this.bookings.forEach(booking => {
-        let pointer = dayjs(booking.starts_at)
-        while (pointer.isBefore(dayjs(booking.ends_at))) {
-          week[pointer.day()][pointer.subtract(this.product.opens_at.substring(0, 2), 'hours').hour()].free -= booking.quantity
-          pointer = pointer.add(1, 'hour')
+      this.loading = true
+      const bookings = await axios.get(`rooms/${this.room.id}/bookings?from=${from}&to=${to}`)
+      this.loading = false
+
+      this.bookings = bookings.data
+    },
+    applyBookings() {
+      this.bookings.forEach(booking => this.applyBooking(booking))
+    },
+    applyBooking(booking) {
+      store().setError(null)
+      let pointer = dayjs(booking.starts_at)
+      while (pointer.isSameOrBefore(dayjs(booking.ends_at), 'minute')) {
+        let indexDay, indexHour
+        if (pointer.isSameOrAfter(pointer.hour(this.product.opens_at.substring(0, 2)), 'minute')) {
+          indexDay = (pointer.day() + 6) % 7
+          indexHour = pointer.subtract(this.product.opens_at.substring(0, 2), 'hours').hour()
+          if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
+            const hour = this.calendar[indexDay][indexHour]
+            hour.free -= booking.quantity
+            if (booking.color) {
+              hour.color = 'bg-green-300'
+            }
+            if (hour.free < 0) {
+              hour.color = 'bg-red-300'
+              store().setError('Das ist wohl was schief gegangen')
+            }
+          }
         }
-      })
-
-      return week
+        pointer = pointer.add(1, 'hour')
+      }
     },
   }
 }
 </script>
+
+<style>
+.loader {
+  border-top-color: #3498db;
+  -webkit-animation: spinner 1.5s linear infinite;
+  animation: spinner 1.5s linear infinite;
+}
+
+@-webkit-keyframes spinner {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
