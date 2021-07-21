@@ -2,11 +2,11 @@
   <form @submit.prevent="handleSubmit">
     <div>
       <label for="first-name">Vorname</label>
-      <input v-model="form.firstName" type="text" id="first-name">
+      <input v-model="form.first_name" type="text" id="first-name">
     </div>
     <div>
       <label for="last-name">Nachname</label>
-      <input v-model="form.lastName" type="text" id="last-name">
+      <input v-model="form.last_name" type="text" id="last-name">
     </div>
     <div>
       <label for="show_curling">E-Mail</label>
@@ -22,7 +22,7 @@
     </div>
     <div>
       <label for="street-no">Hausnummer</label>
-      <input v-model="form.streetNo" type="text" id="street-no">
+      <input v-model="form.street_no" type="text" id="street-no">
     </div>
     <div>
       <label for="zip">PLZ</label>
@@ -47,12 +47,12 @@ export default {
   data() {
     return {
       form: {
-        firstName: '',
-        lastName: '',
+        first_name: '',
+        last_name: '',
         email: '',
         company: '',
         street: '',
-        streetNo: '',
+        street_no: '',
         zip: '',
         city: '',
         phone: ''

@@ -128,13 +128,5 @@ export default {
       return store().getBookings().value
     },
   },
-  // watch: {
-  //   showCurling(newValue) {
-  //     console.log(newValue);
-  //     if (newValue === false) {
-  //       store().removeBooking(2)
-  //     }
-  //   }
-  // }
 }
 </script>
