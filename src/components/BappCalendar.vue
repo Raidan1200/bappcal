@@ -1,92 +1,143 @@
 <template>
-  <div class="relative">
+  <div class="rounded-xl p-4 bg-gray-100 flex justify-center">
+    <!-- Loading -->
+    <!-- TODO: Placement -->
     <div v-if="loading" class="absolute loader ease-linear rounded-full border-8 border-t-8 border-gray-200 flex justify-center align-middle h-24 w-24"></div>
-    <div v-if="bookings && calendar">
-      <div v-if="setTime === 'start'">Startzeit wählen</div>
-      <div v-else>Endzeit wählen</div>
+
+    <!-- Bookings have been loaded, calendar has been built -->
+    <div
+      v-if="bookings && calendar"
+      class="flex flex-col"
+    >
+
+      <!-- Info-Box -->
+      <div class="flex justify-between p-2 rounded text-center bg-gray-200">
+        <button
+          @click="moveWeek('prev')"
+          class="px-3 py-1 rounded-xl bg-blue-200 hover:bg-blue-300"
+          :class="{'invisible' : hideMoveWeekButton('prev')}"
+          :aria-hidden="hideMoveWeekButton('prev')"
+        >Früher</button>
+<!--
+        <div class="px-3 py-1 rounded-xl bg-green-100">
+          <div v-if="setTime === 'start'">Startzeit wählen</div>
+          <div v-else>Endzeit wählen</div>
+        </div>
+ -->
+        <button
+          @click="moveWeek('next')"
+          class="px-3 py-1 rounded-xl bg-blue-200 hover:bg-blue-300"
+          :class="{'invisible' : hideMoveWeekButton('next')}"
+          :aria-hidden="hideMoveWeekButton('next')"
+        >Später</button>
+      </div>
+
+      <!-- Calendar -->
       <table>
         <thead>
           <tr class="bg-gray-200">
-            <td>Day / Hour</td>
-            <td
+            <td class="md:w-28 w-24 pl-2">Tag / Stunde</td>
+            <!-- Hours -->
+            <th
               v-for="(hour, idx) in calendar[0]"
               :key="idx"
-              class="text-center"
+              class="md:w-16 sm:w-12 w-8 py-1 text-center"
             >
               {{ hour.datetime.hour() }}
-            </td>
+            </th>
           </tr>
         </thead>
-        <tr v-for="(day, dIdx) in calendar" :key="dIdx">
-          <td
-            class="hover:bg-gray-300"
+        <tr
+          v-for="(day, dIdx) in calendar"
+          :key="dIdx"
+        >
+          <!-- Clickable Week-Days  -->
+          <th
+            class="py-1 sm:pl-2 sm:hover:-pl-2 hover:bg-gray-200 rounded text-left"
             @click="updateDayOfYear(day[0].datetime, dIdx)"
+
           >
             {{ day[0].datetime.format('dd D.M.') }}
-          </td>
+          </th>
+          <!-- Clickable Matrix-Cell -->
           <td
             v-for="(hour, hIdx) in day"
             :key="hIdx"
             @click="updateTimeFromCalendar(hour.datetime)"
-            class="px-2 hover:bg-gray-200"
+            class="px-2 text-center hover:bg-gray-200 sm:border-none border border-gray-400 "
             :class="hour.color"
           >
-            <div class="text-gray-400">{{ hour.datetime.format('HH:mm') }}</div>
+            <!-- <div class="text-gray-400">{{ hour.datetime.format('HH:mm') }}</div> -->
+          <span class="hidden sm:block">
             {{ hour.free }}
+          </span>
           </td>
         </tr>
       </table>
 
-      <div>
-        <button
-          v-if="showMoveWeekButton('prev')"
-          @click="moveWeek('prev')"
-        >Früher</button>
-        <button
-          v-if="showMoveWeekButton('next')"
-          @click="moveWeek('next')"
-        >Später</button>
+      <!-- Booking Controls -->
+      <div
+        class="py-2 my-2 rounded"
+        :class="{ error : 'bg-red-200' }"
+      >
+        <div class="md:flex md:justify-evenly">
+          <div>
+            <label for="starts_at">Von</label>
+            <input
+              type="number"
+              name="starts_at"
+              id="starts_at"
+              :value="booking.starts_at?.hour()"
+              @input="updateStartsAt($event)"
+              :min="product.opens_at.substr(0, 2)"
+              :max="product.closes_at.substr(0, 2)"
+              class="ml-2 w-20 border-none h-8"
+            >:00 Uhr
+          </div>
+          <div>
+            <label for="ends_at">Bis</label>
+            <input
+              type="number"
+              name="ends_at"
+              id="ends_at"
+              :value="booking.ends_at?.hour()"
+              @input="updateEndsAt($event)"
+              :min="product.opens_at.substr(0, 2)"
+              :max="product.closes_at.substr(0, 2)"
+              class="ml-2 w-20 border-none h-8"
+            >:59 Uhr
+          </div>
+          <div>
+            <label for="quantity">Menge</label>
+            <input
+              :value="booking.quantity"
+              @input="updateQuantity($event)"
+              type="number"
+              name="quantity"
+              id="quantity"
+              :min="product.min_occupancy ?? 0"
+              :max="room.capacity"
+              class="ml-2 w-20 border-none h-8"
+            >
+            <span class="ml-2">(Min: {{ product.min_occupancy }})</span>
+          </div>
+        </div>
       </div>
 
+      <!-- Error Box  -->
       <div
         v-if="error"
-        class="bg-red-300"
+        class="p-2 rounded text-center bg-red-200"
       >
         {{ this.error }}
       </div>
-
-      <label for="starts_at">Von</label>
-      <input
-        type="number"
-        name="starts_at"
-        id="starts_at"
-        :value="booking.starts_at?.hour()"
-        @input="updateStartsAt($event)"
-        :min="product.opens_at.substr(0, 2)"
-        :max="product.closes_at.substr(0, 2)"
-        :class="{ 'bg-green-100' : setTime === 'start' }"
+      <button
+        v-if="validated"
+        class="p-2 rounded text-center bg-green-200 hover:bg-green-300"
+        @click="placeBooking()"
       >
-      <label for="ends_at">Bis</label>
-      <input
-        type="number"
-        name="ends_at"
-        id="ends_at"
-        :value="booking.ends_at?.hour()"
-        @input="updateEndsAt($event)"
-        :min="product.opens_at.substr(0, 2)"
-        :max="product.closes_at.substr(0, 2)"
-        :class="{ 'bg-green-100' : setTime === 'end' }"
-      >
-      <label for="quantity">Menge</label>
-      <input
-        :value="booking.quantity"
-        @input="updateQuantity($event)"
-        type="number"
-        name="quantity"
-        id="quantity"
-        :min="product.min_occupancy ?? 0"
-        :max="room.capacity"
-      >
+        Daten für <span class="font-semibold">{{ product.name }}</span> übernehmen
+      </button>
     </div>
   </div>
 </template>
@@ -94,7 +145,6 @@
 <script>
 import axios from 'axios'
 import dayjs from 'dayjs'
-import cart from '../cart.service'
 
 export default {
   name: 'BappCalendar',
@@ -106,7 +156,7 @@ export default {
     product: {
       type: Object,
       required: true,
-    }
+    },
   },
   data() {
     return {
@@ -124,30 +174,29 @@ export default {
       error: '',
       errors: {
         capacityExceeded: 'Für Ihre Auswahl sind nicht genug Plätze frei.',
-      }
+        minOccupancyError: 'Sie haben die Mindestbelegung unterschritten',
+        startTooEarly: 'Die Startzeit liegt außerhalb der Öffnungszeiten.',
+        endTooLate: 'Die Endzeit liegt außerhalb der Öffnungszeiten.',
+        endBeforeStart: 'Die Startzeit muss vor der Endzeit liegen.',
+      },
+      validated: false
     }
   },
   async mounted() {
       await this.fetchBookings()
       this.makeCalendar()
   },
-  beforeUnmount() {
-    console.log(this.roomId);
-    cart().removeBooking(this.roomId)
-  },
   methods: {
     // Interface
     updateStartsAt(e) {
       this.booking.starts_at = this.booking.starts_at?.hour(e.target.value) || dayjs(this.product.opens_at)
       this.makeCalendar()
+      this.checkStartAndEndTimes()
     },
     updateEndsAt(e) {
       this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.product.closes_at)
       this.makeCalendar()
-    },
-    updateQuantity(e) {
-      this.booking.quantity = e.target.value
-      this.makeCalendar()
+      this.checkStartAndEndTimes()
     },
     updateDayOfYear(date) {
       this.booking.starts_at = this.booking.starts_at.dayOfYear(date.dayOfYear())
@@ -160,8 +209,31 @@ export default {
         this.booking.ends_at = date
       } else {
         this.booking.ends_at = this.booking.starts_at.hour(date.hour())
+        this.maybeSwitchStartAndEnd()
       }
       this.toggleStartEndTime()
+      this.makeCalendar()
+    },
+    checkStartAndEndTimes() {
+      if (this.booking.starts_at.isBefore(this.product.opens_at)) {
+        this.error = this.errors.startTooEarly
+      }
+      if (this.booking.ends_at.isAfter(this.product.closes_at)) {
+        this.error = this.errors.endTooLate
+      }
+      if (this.booking.ends_at.isBefore(this.booking.starts_at)) {
+        this.error = this.errors.endBeforeStart
+      }
+    },
+    maybeSwitchStartAndEnd() {
+      if (this.booking.ends_at.isSameOrBefore(this.booking.starts_at)) {
+        const tmp = this.booking.ends_at
+        this.booking.ends_at = this.booking.starts_at
+        this.booking.starts_at = tmp
+      }
+    },
+    updateQuantity(e) {
+      this.booking.quantity = e.target.value
       this.makeCalendar()
     },
     async moveWeek(direction) {
@@ -183,12 +255,12 @@ export default {
       await this.fetchBookings()
       this.makeCalendar()
     },
-    showMoveWeekButton(direction) {
+    hideMoveWeekButton(direction) {
       if (direction === 'prev') {
-        return this.firstCalendarDay().isAfter(this.product.starts_at, 'day')
+        return !this.firstCalendarDay().isAfter(this.product.starts_at, 'day')
       }
       if (direction === 'next') {
-        return this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
+        return !this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
       }
     },
     toggleStartEndTime() {
@@ -200,6 +272,9 @@ export default {
     lastCalendarDay() {
       return this.calendar[this.calendar.length - 1][0].datetime
     },
+    validate() {
+      this.validated = this.booking.starts_at && this.booking.ends_at && this.booking.quantity && !this.error
+    },
 
     // Calendar
     makeCalendar() {
@@ -208,11 +283,8 @@ export default {
       if (this.booking.starts_at && this.booking.ends_at) {
         this.applyBooking(this.booking)
       }
-      cart().addOrUpdateBooking({
-        roomId: this.room.id,
-        productId: this.product.id,
-        booking: this.booking,
-      })
+      this.validate()
+      this.$emit('place-booking', null)
     },
     makeWeek() {
       let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.product.opens_at.split(':'))
@@ -265,6 +337,10 @@ export default {
     },
     applyBooking(booking) {
       this.error = ''
+      if (this.booking.quantity < this.product.min_occupancy) {
+        this.error = this.errors.minOccupancyError
+      }
+
       let pointer = dayjs(booking.starts_at)
       while (pointer.isSameOrBefore(dayjs(booking.ends_at), 'minute')) {
         let indexDay, indexHour
@@ -274,20 +350,26 @@ export default {
           if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
             const hour = this.calendar[indexDay][indexHour]
             hour.free -= booking.quantity
-            if (booking.color) {
-              hour.color = 'bg-green-300'
-              if (hour.free < 0) {
-                this.error = this.errors.capacityExceeded
-              }
-            }
             if (hour.free < 0) {
-              hour.color = 'bg-red-300'
+              hour.color = 'bg-red-200'
+            }
+            if (booking.color) {
+              if (hour.free >= 0) {
+                hour.color = 'bg-green-300'
+              } else {
+                this.error = this.errors.capacityExceeded
+                hour.color = 'bg-red-400'
+              }
             }
           }
         }
         pointer = pointer.add(1, 'hour')
       }
     },
+    placeBooking() {
+      this.$emit('place-booking', this.booking)
+      this.validated = false
+    }
   }
 }
 </script>

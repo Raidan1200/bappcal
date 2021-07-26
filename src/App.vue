@@ -1,82 +1,136 @@
 <template>
-  <div class="m-6 p-6 rounded-xl bg-white">
-    <h1 class="text-4xl">{{ venue.name }} Buchungsportal</h1>
+  <div class="sm:m-6 sm:p-6 rounded-xl bg-white">
+    <h1 class="sm:text-4xl text-3xl mb-4">{{ venue.name }} Buchungsportal</h1>
     <!-- Loading -->
-    <div v-if="loading">Loading</div>
+    <div v-if="loading">Lade Daten...</div>
 
     <!-- Error -->
-    <div v-else-if="error">There was a problem. Try again later</div>
+    <div v-else-if="error">Da ist wohl etwas schief gelaufen. Bitte kontaktieren Sie uns telefonisch.</div>
 
     <!-- OK ... Go go go -->
     <div v-else>
 
-      <!-- List of rooms -->
-      <div v-for="room in [room(1), room(2)]" :key="room.id">
-        <div v-if="!selectedRoom || selectedRoom === room">
-          <h2 class="text-2xl">Room: {{ room.name }}</h2>
-          <div v-if="selectedRoom === room">
-            <button @click="toggleRoom(room)">Back</button>
-            <BappProducts
-              :products="room.products"
-              @selectProduct="selectProduct($event)"
-              @deselectProducts="selectedProduct = null"
-            />
-            <BappCalendar
-              v-if="selectedProduct"
-              :room="room"
-              :product="selectedProduct"
-            />
-          </div>
-          <div v-else>
-            <button
-              @click="toggleRoom(room)"
-            >Select</button>
-          </div>
+      <!-- Step 1: Nothing has been selected -->
+      <div
+        v-if="!selectedRoom && !selectedProduct"
+        class="md:flex md:space-x-4"
+      >
+        <!-- Hüttenrestaurant  -->
+        <BappRoom @selectRoom="selectRoom($event)" class="flex-1" :room="room(1)" />
+        <!-- Curlingband -->
+        <BappRoom @selectRoom="selectRoom($event)" class="flex-1" :room="room(2)" />
+      </div>
+
+      <!-- Step 2: Room has been selected -->
+      <div
+        v-if="selectedRoom && !selectedProduct"
+      >
+        <div>
+          <button
+            @click="deselectRoom()"
+            class="px-4 py-1 mb-2 rounded-xl bg-blue-200 hover:bg-blue-300"
+          >
+            zurück
+          </button>
+        </div>
+        <!-- <h2 class="text-2xl">{{ selectedRoom.name }}</h2> -->
+        <div
+          v-if="selectedRoom.id === 1"
+          class="md:flex md:space-x-4"
+        >
+          <!-- Classic -->
+          <BappProduct @selectProduct="selectProduct($event)" class="flex-1" :product="room(1).products[0]" />
+          <!-- Premium -->
+          <BappProduct @selectProduct="selectProduct($event)" class="flex-1" :product="room(1).products[1]" />
         </div>
       </div>
 
-      <!-- Curling Option -->
-      <div v-if="selectedRoom === room(1)">
+      <!-- Step 3: Room and Product have been selected -->
+      <div v-if="selectedRoom && selectedProduct">
         <div>
-          <label for="show_curling">Curlingbahn zubuchen</label>
-          <input v-model="showCurling" type="checkbox" id="show_curling">
+          <button
+            @click="deselectProduct(selectedProduct)"
+            class="px-4 py-1 mb-2 rounded-xl bg-blue-200 hover:bg-blue-300"
+          >
+            zurück
+          </button>
         </div>
 
+        <h2 class="text-2xl">{{ selectedProduct.name }}</h2>
+
+        <!-- Calendar for selected Room and Product -->
         <BappCalendar
-          v-if="showCurling"
-          :room="room(2)"
-          :product="room(2).products[0]"
+          :room="selectedRoom"
+          :product="selectedProduct"
+          @placeBooking="selectedBooking = $event"
         />
+
+        <!-- For Hüttenrestaurant also show Curling-Calendar -->
+        <div
+          v-if="selectedRoom.id === 1"
+          class="p-4"
+        >
+          <label for="add-curling">Curlingbahn zubuchen</label>
+          <input v-model="addCurling" type="checkbox" name="add-curling">
+        </div>
+
+        <div v-if="addCurling">
+          <h2 class="text-2xl">Curlingbahn</h2>
+          <BappCalendar
+            :room="room(2)"
+            :product="room(2).products[0]"
+            @placeBooking="curlingBooking = $event"
+          />
+        </div>
+      </div>
+
+      <!-- Step 4: Calendar-Dates have been chosen -->
+      <!-- TODO: "The Horror! THE HORROR!" ... by Joseph Conrad, good writer, bad coder -->
+      <div
+        v-if="selectedRoom && selectedProduct && selectedBooking && (!addCurling || addCurling && curlingBooking)"
+      >
+        <div class="p-4 my-4 bg-gray-100 rounded-xl">
+          <h2 class="mb-4 text-2xl">Überprüfen Sie Ihre Buchung</h2>
+          <ul class="text-xl">
+            <li>{{ formatBookingData(selectedBooking) }} : {{ selectedProduct.name }} für {{ selectedBooking.quantity }} Personen</li>
+            <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).products[0].name }}</li>
+          </ul>
+        </div>
+        <div
+          v-if="addCurling && (selectedBooking.starts_at.dayOfYear() !== curlingBooking.starts_at.dayOfYear())"
+          class="m-2 px-3 py-2 rounded-xl bg-yellow-200 text-center"
+        >
+          Hinweis! Ihre Buchungen sind an verschiedenen Tagen!
+          Fahren Sie nur fort, wenn dies so gewollt ist.
+        </div>
+        <div
+          v-if="selectedBooking && (!addCurling || addCurling && curlingBooking)"
+          class="m-8"
+        >
+          <BappCustomerForm
+            @customerCompleted="submitBooking($event)"
+          />
+        </div>
       </div>
     </div>
-    <div v-if="getError">{{ getError() }}</div>
-
-    <BappCustomerForm
-      v-if="showCustomerForm"
-      @setCustomer="handleSubmit($event)"
-    />
-
-    <button
-      v-if="!showCustomerForm"
-      @click="showCustomerForm = true"
-      :disabled="getError()"
-      :class="{ 'bg-red-300' : getError() }"
-    >Kundendaten eingeben</button>
-    {{ bla() }}
   </div>
 </template>
 
 <script>
+/* eslint-disable vue/no-unused-components */
+
 import axios from 'axios'
-import cart from './cart.service'
-import BappProducts from './components/BappProducts'
+// import cart from './cart.service'
+import BappRoom from './components/BappRoom'
+import BappProduct from './components/BappProduct'
 import BappCalendar from './components/BappCalendar'
 import BappCustomerForm from './components/BappCustomerForm'
 
 export default {
   name: 'BappCal',
   components: {
-    BappProducts,
+    BappRoom,
+    BappProduct,
     BappCalendar,
     BappCustomerForm
   },
@@ -87,7 +141,9 @@ export default {
       venue: {},
       selectedRoom: null,
       selectedProduct: null,
-      showCurling: false,
+      selectedBooking: null,
+      addCurling: false,
+      curlingBooking: null,
       showCustomerForm: false,
     }
   },
@@ -96,7 +152,7 @@ export default {
       const venue = await axios.get('config')
       this.venue = venue.data
     } catch (e) {
-      console.log(e)
+      console.error(e)
       this.error = true
     }
 
@@ -106,39 +162,66 @@ export default {
     room(id) {
       return this.venue.rooms.find((room) => room.id === id)
     },
-    toggleRoom(room) {
-      if (room === this.selectedRoom) {
-        this.selectedRoom = null
-        this.selectedProduct = null
-      } else {
-        this.selectedRoom = room
-        if (this.selectedRoom === this.room(2)) {
-          this.selectedProduct = this.room(2).products[0]
-        }
+    selectRoom(room) {
+      this.selectedRoom = room
+
+      if (room.id === 2) {
+        this.selectProduct(this.room(2).products[0])
       }
+
+      console.log('room ' + room.name + ' selected')
     },
     selectProduct(product) {
       this.selectedProduct = product
-      if (product) {
-        cart().addOrUpdateBooking(product)
-      } else {
-        cart().removeBooking(this.selectedRoom)
+    },
+    deselectProduct(product) {
+      const productId = product.id
+
+      this.selectedProduct = null
+
+      if (productId === 3) {
+        this.selectedRoom = null
       }
+
+      this.addCurling = false
+      this.showCustomerForm = false
     },
-    getError() {
-      return cart().getError().value
+    deselectRoom() {
+      this.selectedProduct = null
+      this.selectedRoom = null
+      this.addCurling = false
+      this.showCustomerForm = false
     },
-    async handleSubmit($event) {
+    formatBookingData(booking) {
+      return `${booking.starts_at.format('dddd, D.M.')} von ${booking.starts_at.format('HH:mm')} bis ${booking.ends_at.add(1, 'hour').format('HH:mm')}`
+    },
+    collectBookings() {
+      const bookings = [{
+        roomId: this.selectedRoom.id,
+        productId: this.selectedProduct.id,
+        booking: this.selectedBooking
+      }]
+
+      if (this.addCurling) {
+        bookings.push({
+          roomId: 2,
+          productId: 3,
+          booking: this.curlingBooking
+        })
+      }
+
+      return bookings
+    },
+    async submitBooking(customer) {
+      console.log(customer);
+      const bookings = this.collectBookings()
       const response = await axios.post(`venues/${this.venue.id}/orders`, {
-        bookings: cart().getBookings().value,
-        customer: $event
+        bookings,
+        customer
       })
 
       console.log(response)
-    },
-    bla() {
-      return cart().getBookings().value
-    },
+    }
   },
 }
 </script>
