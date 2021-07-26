@@ -20,14 +20,14 @@
         <tr v-for="(day, dIdx) in calendar" :key="dIdx">
           <td
             class="hover:bg-gray-300"
-            @click="setBookingDay(day[0].datetime, dIdx)"
+            @click="updateDayOfYear(day[0].datetime, dIdx)"
           >
             {{ day[0].datetime.format('dd D.M.') }}
           </td>
           <td
             v-for="(hour, hIdx) in day"
             :key="hIdx"
-            @click="setBooking(hour.datetime)"
+            @click="updateTimeFromCalendar(hour.datetime)"
             class="px-2 hover:bg-gray-200"
             :class="hour.color"
           >
@@ -39,13 +39,20 @@
 
       <div>
         <button
-          v-if="showButton('prev')"
+          v-if="showMoveWeekButton('prev')"
           @click="moveWeek('prev')"
         >Früher</button>
         <button
-          v-if="showButton('next')"
+          v-if="showMoveWeekButton('next')"
           @click="moveWeek('next')"
         >Später</button>
+      </div>
+
+      <div
+        v-if="error"
+        class="bg-red-300"
+      >
+        {{ this.error }}
       </div>
 
       <label for="starts_at">Von</label>
@@ -87,7 +94,7 @@
 <script>
 import axios from 'axios'
 import dayjs from 'dayjs'
-import store from '../store.service'
+import cart from '../cart.service'
 
 export default {
   name: 'BappCalendar',
@@ -107,12 +114,16 @@ export default {
       calendar: null,
       offset: 0,
       setTime: 'start',
-      bookings: null,
+      bookings: null,  // TODO actually I don't need to store the bookings - just apply them?
       booking: {
         starts_at: null,
         ends_at: null,
         quantity: this.product.min_occupancy ?? 0,
         color: true,
+      },
+      error: '',
+      errors: {
+        capacityExceeded: 'Für Ihre Auswahl sind nicht genug Plätze frei.',
       }
     }
   },
@@ -121,9 +132,11 @@ export default {
       this.makeCalendar()
   },
   beforeUnmount() {
-    store().removeBooking(this.roomId)
+    console.log(this.roomId);
+    cart().removeBooking(this.roomId)
   },
   methods: {
+    // Interface
     updateStartsAt(e) {
       this.booking.starts_at = this.booking.starts_at?.hour(e.target.value) || dayjs(this.product.opens_at)
       this.makeCalendar()
@@ -136,19 +149,19 @@ export default {
       this.booking.quantity = e.target.value
       this.makeCalendar()
     },
-    setBookingDay(date) {
+    updateDayOfYear(date) {
       this.booking.starts_at = this.booking.starts_at.dayOfYear(date.dayOfYear())
       this.booking.ends_at = this.booking.ends_at.dayOfYear(date.dayOfYear())
       this.makeCalendar()
     },
-    setBooking(date) {
+    updateTimeFromCalendar(date) {
       if (this.setTime === 'start') {
         this.booking.starts_at = date
         this.booking.ends_at = date
       } else {
         this.booking.ends_at = this.booking.starts_at.hour(date.hour())
       }
-      this.toggleSetTime()
+      this.toggleStartEndTime()
       this.makeCalendar()
     },
     async moveWeek(direction) {
@@ -170,7 +183,7 @@ export default {
       await this.fetchBookings()
       this.makeCalendar()
     },
-    showButton(direction) {
+    showMoveWeekButton(direction) {
       if (direction === 'prev') {
         return this.firstCalendarDay().isAfter(this.product.starts_at, 'day')
       }
@@ -178,7 +191,7 @@ export default {
         return this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
       }
     },
-    toggleSetTime() {
+    toggleStartEndTime() {
       this.setTime = (this.setTime === 'start') ? 'end' : 'start'
     },
     firstCalendarDay() {
@@ -187,6 +200,7 @@ export default {
     lastCalendarDay() {
       return this.calendar[this.calendar.length - 1][0].datetime
     },
+
     // Calendar
     makeCalendar() {
       this.makeWeek()
@@ -194,8 +208,7 @@ export default {
       if (this.booking.starts_at && this.booking.ends_at) {
         this.applyBooking(this.booking)
       }
-      console.log('blablabla');
-      store().addOrUpdateBooking({
+      cart().addOrUpdateBooking({
         roomId: this.room.id,
         productId: this.product.id,
         booking: this.booking,
@@ -251,7 +264,7 @@ export default {
       this.bookings.forEach(booking => this.applyBooking(booking))
     },
     applyBooking(booking) {
-      store().setError(null)
+      this.error = ''
       let pointer = dayjs(booking.starts_at)
       while (pointer.isSameOrBefore(dayjs(booking.ends_at), 'minute')) {
         let indexDay, indexHour
@@ -263,10 +276,12 @@ export default {
             hour.free -= booking.quantity
             if (booking.color) {
               hour.color = 'bg-green-300'
+              if (hour.free < 0) {
+                this.error = this.errors.capacityExceeded
+              }
             }
             if (hour.free < 0) {
               hour.color = 'bg-red-300'
-              store().setError('Das ist wohl was schief gegangen')
             }
           }
         }

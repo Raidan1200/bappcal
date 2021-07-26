@@ -1,5 +1,7 @@
 import { ref, readonly, computed } from 'vue'
 
+// TODO IMPORTANT: This actually is a shopping cart!
+
 const state = ref({
   bookings: [],
   error: null,
@@ -16,12 +18,15 @@ const getters = {
 
 const actions = {
   hasBooking: (roomId) => {
-    return !! state.value.bookings.find(booking => booking.roomId === roomId)
+    return !! state.value.bookings.find(booking => {
+      return booking.roomId === roomId
+    })
   },
   removeBooking: (roomId) => {
-    state.value.bookings.splice(
-      state.value.bookings.indexOf(booking => booking.room === roomId), 1
-    )
+    const index = state.value.bookings.findIndex(booking => {
+      return booking.roomId === roomId
+    })
+    state.value.bookings.splice(index, 1)
   },
   addOrUpdateBooking: ({ roomId, productId, booking }) => {
     if (actions.hasBooking(roomId)) {

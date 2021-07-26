@@ -1,8 +1,13 @@
 <template>
   <div class="m-6 p-6 rounded-xl bg-white">
     <h1 class="text-4xl">{{ venue.name }} Buchungsportal</h1>
+    <!-- Loading -->
     <div v-if="loading">Loading</div>
+
+    <!-- Error -->
     <div v-else-if="error">There was a problem. Try again later</div>
+
+    <!-- OK ... Go go go -->
     <div v-else>
 
       <!-- List of rooms -->
@@ -13,7 +18,7 @@
             <button @click="toggleRoom(room)">Back</button>
             <BappProducts
               :products="room.products"
-              @selectProduct="selectedProduct = $event"
+              @selectProduct="selectProduct($event)"
               @deselectProducts="selectedProduct = null"
             />
             <BappCalendar
@@ -63,7 +68,7 @@
 
 <script>
 import axios from 'axios'
-import store from './store.service'
+import cart from './cart.service'
 import BappProducts from './components/BappProducts'
 import BappCalendar from './components/BappCalendar'
 import BappCustomerForm from './components/BappCustomerForm'
@@ -108,24 +113,31 @@ export default {
       } else {
         this.selectedRoom = room
         if (this.selectedRoom === this.room(2)) {
-          console.log('blabla');
           this.selectedProduct = this.room(2).products[0]
         }
       }
     },
+    selectProduct(product) {
+      this.selectedProduct = product
+      if (product) {
+        cart().addOrUpdateBooking(product)
+      } else {
+        cart().removeBooking(this.selectedRoom)
+      }
+    },
     getError() {
-      return store().getError().value
+      return cart().getError().value
     },
     async handleSubmit($event) {
       const response = await axios.post(`venues/${this.venue.id}/orders`, {
-        bookings: store().getBookings().value,
+        bookings: cart().getBookings().value,
         customer: $event
       })
 
       console.log(response)
     },
     bla() {
-      return store().getBookings().value
+      return cart().getBookings().value
     },
   },
 }
