@@ -3,10 +3,9 @@ import { createApp } from 'vue'
 import axios from 'axios'
 import './assets/tailwind.css'
 
-// TODO: move this to an .env file
 const API_KEY = '1|eZiKXxZPJdfWbtKQdc5kzycRwUSelVVB7sV4Aghq'
 
-axios.defaults.baseURL = 'http://localhost/api'
+axios.defaults.baseURL = 'http://bapp.birusch.de/api'
 axios.defaults.headers.post['Accept'] = 'application/json'
 axios.defaults.headers.common['Authorization'] = `Bearer ${API_KEY}`
 
