@@ -87,8 +87,7 @@
               type="number"
               name="starts_at"
               id="starts_at"
-              :value="booking.starts_at?.hour()"
-              @input="updateStartsAt($event)"
+              v-model="starts_at"
               :min="product.opens_at.substr(0, 2)"
               :max="product.closes_at.substr(0, 2)"
               class="ml-2 w-20 border-none h-8"
@@ -96,12 +95,12 @@
           </div>
           <div>
             <label for="ends_at">Bis</label>
+            <!-- TODO: value input ... this cannot be right -->
             <input
               type="number"
               name="ends_at"
               id="ends_at"
-              :value="booking.ends_at?.hour()"
-              @input="updateEndsAt($event)"
+              v-model="ends_at"
               :min="product.opens_at.substr(0, 2)"
               :max="product.closes_at.substr(0, 2)"
               class="ml-2 w-20 border-none h-8"
@@ -161,13 +160,15 @@ export default {
   data() {
     return {
       loading: false,
+      bookings: null,
       calendar: null,
       offset: 0,
       setTime: 'start',
-      bookings: null,  // TODO actually I don't need to store the bookings - just apply them?
+      starts_at: null,
+      ends_at: null,
       booking: {
-        starts_at: null,
-        ends_at: null,
+        starts_at: '',
+        ends_at: '',
         quantity: this.product.min_occupancy ?? 0,
         color: true,
       },
@@ -186,13 +187,39 @@ export default {
       await this.fetchBookings()
       this.makeCalendar()
   },
-  methods: {
-    // Interface
-    updateStartsAt(e) {
-      this.booking.starts_at = this.booking.starts_at?.hour(e.target.value) || dayjs(this.product.opens_at)
+  watch: {
+    starts_at(hour) {
+      if (this.booking.starts_at) {
+        this.booking.starts_at = this.booking.starts_at.hour(hour)
+      } else {
+        this.booking.starts_at = dayjs(this.calendar[0][0].datetime)
+      }
+      if (!this.booking.ends_at) {
+        this.booking.ends_at = dayjs(this.booking.starts_at)
+        this.ends_at = this.booking.ends_at.hour()
+      }
+
       this.makeCalendar()
       this.checkStartAndEndTimes()
     },
+    ends_at(hour) {
+      if (this.booking.ends_at) {
+        this.booking.ends_at = this.booking.ends_at.hour(hour)
+      } else {
+        this.booking.ends_at = dayjs(this.calendar[0][this.calendar[0].length - 1].datetime)
+      }
+
+      if (!this.booking.starts_at) {
+        this.booking.starts_at = dayjs(this.booking.ends_at)
+        this.starts_at = this.booking.starts_at.hour()
+      }
+
+      this.makeCalendar()
+      this.checkStartAndEndTimes()
+    }
+  },
+  methods: {
+    // Interface
     updateEndsAt(e) {
       this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.product.closes_at)
       this.makeCalendar()
@@ -206,6 +233,7 @@ export default {
     updateTimeFromCalendar(date) {
       if (this.setTime === 'start') {
         this.booking.starts_at = date
+        // this.starts_at = date.hour()
         this.booking.ends_at = date
       } else {
         this.booking.ends_at = this.booking.starts_at.hour(date.hour())
@@ -257,7 +285,7 @@ export default {
     },
     hideMoveWeekButton(direction) {
       if (direction === 'prev') {
-        return !this.firstCalendarDay().isAfter(this.product.starts_at, 'day')
+        return !this.firstCalendarDay().isAfter(this.product.starts_at, 'day') || this.firstCalendarDay().isBefore(dayjs())
       }
       if (direction === 'next') {
         return !this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
@@ -294,6 +322,11 @@ export default {
         start = dayjs(this.product.starts_at).hour(...this.product.opens_at.split(':'))
       }
 
+      // TODO: This doesn't work in combination with applyBookings :(
+      // if (start.isSameOrBefore(dayjs())) {
+      //   start = dayjs().hour(...this.product.opens_at.split(':'))
+      // }
+
       if (end.isAfter(this.product.ends_at)) {
         end = dayjs(this.product.ends_at).hour(...this.product.closes_at.split(':'))
       }
@@ -308,7 +341,7 @@ export default {
         while (pointer.isBefore(endOfDay, 'hours')) {
           day.push({
             datetime: pointer,
-            free: this.room.capacity
+            free: this.room.capacity,
           })
 
           pointer = pointer.add(1, 'hour')
@@ -350,7 +383,7 @@ export default {
           if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
             const hour = this.calendar[indexDay][indexHour]
             hour.free -= booking.quantity
-            if (hour.free < 0) {
+            if (hour.free < this.product.min_occupancy) {
               hour.color = 'bg-red-200'
             }
             if (booking.color) {

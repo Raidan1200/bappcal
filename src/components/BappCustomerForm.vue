@@ -3,7 +3,7 @@
     @submit.prevent="handleSubmit"
   >
     <div class="md:flex">
-      <div class="md:w-1/2 mr-6">
+      <div class="md:w-1/2 md:mr-6">
         <div class="flex flex-col my-2">
           <label for="first-name">Vorname *</label>
           <div v-if="errors.first_name" class="text-red-600">
@@ -37,7 +37,7 @@
           <input v-model="form.phone" type="text" id="phone">
         </div>
       </div>
-      <div class="md:w-1/2 ml-6">
+      <div class="md:w-1/2 md:ml-6">
         <div v-if="errors.address" class="text-red-600">
           {{ errors.address }}
         </div>

@@ -5,7 +5,7 @@ import './assets/tailwind.css'
 
 const API_KEY = '1|eZiKXxZPJdfWbtKQdc5kzycRwUSelVVB7sV4Aghq'
 
-axios.defaults.baseURL = 'http://bapp.birusch.de/api'
+axios.defaults.baseURL = process.env.VUE_APP_API_URL
 axios.defaults.headers.post['Accept'] = 'application/json'
 axios.defaults.headers.common['Authorization'] = `Bearer ${API_KEY}`
 

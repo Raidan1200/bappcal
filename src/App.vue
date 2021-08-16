@@ -103,14 +103,14 @@
           Hinweis! Ihre Buchungen sind an verschiedenen Tagen!
           Fahren Sie nur fort, wenn dies so gewollt ist.
         </div>
-        <div
-          v-if="selectedBooking && (!addCurling || addCurling && curlingBooking)"
-          class="m-8"
-        >
-          <BappCustomerForm
-            @customerCompleted="submitBooking($event)"
-          />
-        </div>
+      </div>
+      <div
+        v-show="selectedBooking && (!addCurling || addCurling && curlingBooking)"
+        class="m-8"
+      >
+        <BappCustomerForm
+          @customerCompleted="submitBooking($event)"
+        />
       </div>
     </div>
   </div>
@@ -120,7 +120,6 @@
 /* eslint-disable vue/no-unused-components */
 
 import axios from 'axios'
-// import cart from './cart.service'
 import BappRoom from './components/BappRoom'
 import BappProduct from './components/BappProduct'
 import BappCalendar from './components/BappCalendar'
@@ -197,23 +196,26 @@ export default {
     },
     collectBookings() {
       const bookings = [{
-        roomId: this.selectedRoom.id,
-        productId: this.selectedProduct.id,
-        booking: this.selectedBooking
+        room_id: this.selectedRoom.id,
+        product_id: this.selectedProduct.id,
+        starts_at: this.selectedBooking.starts_at,
+        ends_at: this.selectedBooking.ends_at,
+        quantity: this.selectedBooking.quantity
       }]
 
       if (this.addCurling) {
         bookings.push({
-          roomId: 2,
-          productId: 3,
-          booking: this.curlingBooking
+          room_id: 2,
+          product_id: 3,
+          starts_at: this.curlingBooking.starts_at,
+          ends_at: this.curlingBooking.ends_at,
+          quantity: this.curlingBooking.quantity
         })
       }
 
       return bookings
     },
     async submitBooking(customer) {
-      console.log(customer);
       const bookings = this.collectBookings()
       const response = await axios.post(`venues/${this.venue.id}/orders`, {
         bookings,
