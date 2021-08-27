@@ -12,7 +12,7 @@
 
       <!-- Step 1: Nothing has been selected -->
       <div
-        v-if="!selectedRoom && !selectedProduct"
+        v-if="!selectedRoom && !selectedPkg"
         class="md:flex md:space-x-4"
       >
         <!-- Hüttenrestaurant  -->
@@ -23,7 +23,7 @@
 
       <!-- Step 2: Room has been selected -->
       <div
-        v-if="selectedRoom && !selectedProduct"
+        v-if="selectedRoom && !selectedPkg"
       >
         <div>
           <button
@@ -39,29 +39,29 @@
           class="md:flex md:space-x-4"
         >
           <!-- Classic -->
-          <BappProduct @selectProduct="selectProduct($event)" class="flex-1" :product="room(1).products[0]" />
+          <BappPkg @selectPkg="selectPkg($event)" class="flex-1" :pkg="room(1).packages[0]" />
           <!-- Premium -->
-          <BappProduct @selectProduct="selectProduct($event)" class="flex-1" :product="room(1).products[1]" />
+          <BappPkg @selectPkg="selectPkg($event)" class="flex-1" :pkg="room(1).packages[1]" />
         </div>
       </div>
 
-      <!-- Step 3: Room and Product have been selected -->
-      <div v-if="selectedRoom && selectedProduct">
+      <!-- Step 3: Room and Pkg have been selected -->
+      <div v-if="selectedRoom && selectedPkg">
         <div>
           <button
-            @click="deselectProduct(selectedProduct)"
+            @click="deselectPkg(selectedPkg)"
             class="px-4 py-1 mb-2 rounded-xl bg-blue-200 hover:bg-blue-300"
           >
             zurück
           </button>
         </div>
 
-        <h2 class="text-2xl">{{ selectedProduct.name }}</h2>
+        <h2 class="text-2xl">{{ selectedPkg.name }}</h2>
 
-        <!-- Calendar for selected Room and Product -->
+        <!-- Calendar for selected Room and Pkg -->
         <BappCalendar
           :room="selectedRoom"
-          :product="selectedProduct"
+          :pkg="selectedPkg"
           @placeBooking="selectedBooking = $event"
         />
 
@@ -78,7 +78,7 @@
           <h2 class="text-2xl">Curlingbahn</h2>
           <BappCalendar
             :room="room(2)"
-            :product="room(2).products[0]"
+            :pkg="room(2).packages[0]"
             @placeBooking="curlingBooking = $event"
           />
         </div>
@@ -87,13 +87,13 @@
       <!-- Step 4: Calendar-Dates have been chosen -->
       <!-- TODO: "The Horror! THE HORROR!" ... by Joseph Conrad, good writer, bad coder -->
       <div
-        v-if="selectedRoom && selectedProduct && selectedBooking && (!addCurling || addCurling && curlingBooking)"
+        v-if="selectedRoom && selectedPkg && selectedBooking && (!addCurling || addCurling && curlingBooking)"
       >
         <div class="p-4 my-4 bg-gray-100 rounded-xl">
           <h2 class="mb-4 text-2xl">Überprüfen Sie Ihre Buchung</h2>
           <ul class="text-xl">
-            <li>{{ formatBookingData(selectedBooking) }} : {{ selectedProduct.name }} für {{ selectedBooking.quantity }} Personen</li>
-            <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).products[0].name }}</li>
+            <li>{{ formatBookingData(selectedBooking) }} : {{ selectedPkg.name }} für {{ selectedBooking.quantity }} Personen</li>
+            <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).pkgs[0].name }}</li>
           </ul>
         </div>
         <div
@@ -121,7 +121,7 @@
 
 import axios from 'axios'
 import BappRoom from './components/BappRoom'
-import BappProduct from './components/BappProduct'
+import BappPkg from './components/BappPkg'
 import BappCalendar from './components/BappCalendar'
 import BappCustomerForm from './components/BappCustomerForm'
 
@@ -129,7 +129,7 @@ export default {
   name: 'BappCal',
   components: {
     BappRoom,
-    BappProduct,
+    BappPkg,
     BappCalendar,
     BappCustomerForm
   },
@@ -139,7 +139,7 @@ export default {
       error: false,
       venue: {},
       selectedRoom: null,
-      selectedProduct: null,
+      selectedPkg: null,
       selectedBooking: null,
       addCurling: false,
       curlingBooking: null,
@@ -165,20 +165,20 @@ export default {
       this.selectedRoom = room
 
       if (room.id === 2) {
-        this.selectProduct(this.room(2).products[0])
+        this.selectPkg(this.room(2).packages[0])
       }
 
       console.log('room ' + room.name + ' selected')
     },
-    selectProduct(product) {
-      this.selectedProduct = product
+    selectPkg(pkg) {
+      this.selectedPkg = pkg
     },
-    deselectProduct(product) {
-      const productId = product.id
+    deselectPkg(pkg) {
+      const pkgId = pkg.id
 
-      this.selectedProduct = null
+      this.selectedPkg = null
 
-      if (productId === 3) {
+      if (pkgId === 3) {
         this.selectedRoom = null
       }
 
@@ -186,7 +186,7 @@ export default {
       this.showCustomerForm = false
     },
     deselectRoom() {
-      this.selectedProduct = null
+      this.selectedPkg = null
       this.selectedRoom = null
       this.addCurling = false
       this.showCustomerForm = false
@@ -197,7 +197,7 @@ export default {
     collectBookings() {
       const bookings = [{
         room_id: this.selectedRoom.id,
-        product_id: this.selectedProduct.id,
+        package_id: this.selectedPkg.id,
         starts_at: this.selectedBooking.starts_at,
         ends_at: this.selectedBooking.ends_at,
         quantity: this.selectedBooking.quantity
@@ -206,7 +206,7 @@ export default {
       if (this.addCurling) {
         bookings.push({
           room_id: 2,
-          product_id: 3,
+          package_id: 3,
           starts_at: this.curlingBooking.starts_at,
           ends_at: this.curlingBooking.ends_at,
           quantity: this.curlingBooking.quantity

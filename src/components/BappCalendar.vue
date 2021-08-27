@@ -88,8 +88,8 @@
               name="starts_at"
               id="starts_at"
               v-model="starts_at"
-              :min="product.opens_at.substr(0, 2)"
-              :max="product.closes_at.substr(0, 2)"
+              :min="pkg.opens_at.substr(0, 2)"
+              :max="pkg.closes_at.substr(0, 2)"
               class="ml-2 w-20 border-none h-8"
             >:00 Uhr
           </div>
@@ -101,8 +101,8 @@
               name="ends_at"
               id="ends_at"
               v-model="ends_at"
-              :min="product.opens_at.substr(0, 2)"
-              :max="product.closes_at.substr(0, 2)"
+              :min="pkg.opens_at.substr(0, 2)"
+              :max="pkg.closes_at.substr(0, 2)"
               class="ml-2 w-20 border-none h-8"
             >:59 Uhr
           </div>
@@ -114,11 +114,11 @@
               type="number"
               name="quantity"
               id="quantity"
-              :min="product.min_occupancy ?? 0"
+              :min="pkg.min_occupancy ?? 0"
               :max="room.capacity"
               class="ml-2 w-20 border-none h-8"
             >
-            <span class="ml-2">(Min: {{ product.min_occupancy }})</span>
+            <span class="ml-2">(Min: {{ pkg.min_occupancy }})</span>
           </div>
         </div>
       </div>
@@ -135,7 +135,7 @@
         class="p-2 rounded text-center bg-green-200 hover:bg-green-300"
         @click="placeBooking()"
       >
-        Daten für <span class="font-semibold">{{ product.name }}</span> übernehmen
+        Daten für <span class="font-semibold">{{ pkg.name }}</span> übernehmen
       </button>
     </div>
   </div>
@@ -152,7 +152,7 @@ export default {
       type: Object,
       required: true,
     },
-    product: {
+    pkg: {
       type: Object,
       required: true,
     },
@@ -169,7 +169,7 @@ export default {
       booking: {
         starts_at: '',
         ends_at: '',
-        quantity: this.product.min_occupancy ?? 0,
+        quantity: this.pkg.min_occupancy ?? 0,
         color: true,
       },
       error: '',
@@ -221,7 +221,7 @@ export default {
   methods: {
     // Interface
     updateEndsAt(e) {
-      this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.product.closes_at)
+      this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.pkg.closes_at)
       this.makeCalendar()
       this.checkStartAndEndTimes()
     },
@@ -243,10 +243,10 @@ export default {
       this.makeCalendar()
     },
     checkStartAndEndTimes() {
-      if (this.booking.starts_at.isBefore(this.product.opens_at)) {
+      if (this.booking.starts_at.isBefore(this.pkg.opens_at)) {
         this.error = this.errors.startTooEarly
       }
-      if (this.booking.ends_at.isAfter(this.product.closes_at)) {
+      if (this.booking.ends_at.isAfter(this.pkg.closes_at)) {
         this.error = this.errors.endTooLate
       }
       if (this.booking.ends_at.isBefore(this.booking.starts_at)) {
@@ -285,10 +285,10 @@ export default {
     },
     hideMoveWeekButton(direction) {
       if (direction === 'prev') {
-        return !this.firstCalendarDay().isAfter(this.product.starts_at, 'day') || this.firstCalendarDay().isBefore(dayjs())
+        return !this.firstCalendarDay().isAfter(this.pkg.starts_at, 'day') || this.firstCalendarDay().isBefore(dayjs())
       }
       if (direction === 'next') {
-        return !this.lastCalendarDay().isBefore(this.product.ends_at, 'day')
+        return !this.lastCalendarDay().isBefore(this.pkg.ends_at, 'day')
       }
     },
     toggleStartEndTime() {
@@ -315,25 +315,25 @@ export default {
       this.$emit('place-booking', null)
     },
     makeWeek() {
-      let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.product.opens_at.split(':'))
-      let end = dayjs().endOf('week').add(this.offset, 'weeks').hour(...this.product.closes_at.split(':'))
+      let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.pkg.opens_at.split(':'))
+      let end = dayjs().endOf('week').add(this.offset, 'weeks').hour(...this.pkg.closes_at.split(':'))
 
-      if (start.isBefore(this.product.starts_at)) {
-        start = dayjs(this.product.starts_at).hour(...this.product.opens_at.split(':'))
+      if (start.isBefore(this.pkg.starts_at)) {
+        start = dayjs(this.pkg.starts_at).hour(...this.pkg.opens_at.split(':'))
       }
 
       // TODO: This doesn't work in combination with applyBookings :(
       // if (start.isSameOrBefore(dayjs())) {
-      //   start = dayjs().hour(...this.product.opens_at.split(':'))
+      //   start = dayjs().hour(...this.pkg.opens_at.split(':'))
       // }
 
-      if (end.isAfter(this.product.ends_at)) {
-        end = dayjs(this.product.ends_at).hour(...this.product.closes_at.split(':'))
+      if (end.isAfter(this.pkg.ends_at)) {
+        end = dayjs(this.pkg.ends_at).hour(...this.pkg.closes_at.split(':'))
       }
 
       const week = []
       let pointer = start.clone()
-      let endOfDay = start.hour(...this.product.closes_at.split(':'))
+      let endOfDay = start.hour(...this.pkg.closes_at.split(':'))
 
       while (pointer.isSameOrBefore(end, 'days')) {
         const day = []
@@ -348,8 +348,8 @@ export default {
         }
 
         week.push(day)
-        pointer = pointer.hour(...this.product.opens_at.split(':')).add(1, 'day')
-        endOfDay = pointer.hour(...this.product.closes_at.split(':'))
+        pointer = pointer.hour(...this.pkg.opens_at.split(':')).add(1, 'day')
+        endOfDay = pointer.hour(...this.pkg.closes_at.split(':'))
       }
 
       this.calendar = week
@@ -370,20 +370,20 @@ export default {
     },
     applyBooking(booking) {
       this.error = ''
-      if (this.booking.quantity < this.product.min_occupancy) {
+      if (this.booking.quantity < this.pkg.min_occupancy) {
         this.error = this.errors.minOccupancyError
       }
 
       let pointer = dayjs(booking.starts_at)
       while (pointer.isSameOrBefore(dayjs(booking.ends_at), 'minute')) {
         let indexDay, indexHour
-        if (pointer.isSameOrAfter(pointer.hour(this.product.opens_at.substring(0, 2)), 'minute')) {
+        if (pointer.isSameOrAfter(pointer.hour(this.pkg.opens_at.substring(0, 2)), 'minute')) {
           indexDay = (pointer.day() + 6) % 7
-          indexHour = pointer.subtract(this.product.opens_at.substring(0, 2), 'hours').hour()
+          indexHour = pointer.subtract(this.pkg.opens_at.substring(0, 2), 'hours').hour()
           if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
             const hour = this.calendar[indexDay][indexHour]
             hour.free -= booking.quantity
-            if (hour.free < this.product.min_occupancy) {
+            if (hour.free < this.pkg.min_occupancy) {
               hour.color = 'bg-red-200'
             }
             if (booking.color) {

@@ -1,27 +1,27 @@
 <template>
   <article
-    @click="$emit('select-product', product)"
+    @click="$emit('select-pkg', pkg)"
     class="rounded-xl p-4 hover:bg-gray-100"
   >
-    <h2 class="text-2xl">{{ product.name }}</h2>
-    <p>{{ product.slogan }}</p>
+    <h2 class="text-2xl">{{ pkg.name }}</h2>
+    <p>{{ pkg.slogan }}</p>
     <img
-      :src="product.image"
-      :alt="`${product.name} Foto`"
+      :src="pkg.image"
+      :alt="`${pkg.name} Foto`"
       class="h-64 rounded-xl"
     />
     <div
       class="py-4"
-      v-html="product.description"
+      v-html="pkg.description"
     />
   </article>
 </template>
 
 <script>
 export default {
-  name: 'BappProduct',
+  name: 'BappPkg',
   props: {
-    product: {
+    pkg: {
       type: Object,
       required: true
     }
