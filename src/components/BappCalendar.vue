@@ -315,17 +315,12 @@ export default {
       this.$emit('place-booking', null)
     },
     makeWeek() {
-      let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.pkg.opens_at.split(':'))
-      let end = dayjs().endOf('week').add(this.offset, 'weeks').hour(...this.pkg.closes_at.split(':'))
-
-      if (start.isBefore(this.pkg.starts_at)) {
-        start = dayjs(this.pkg.starts_at).hour(...this.pkg.opens_at.split(':'))
+      if (!this.offset && dayjs().isBefore(this.pkg.starts_at)) {
+        this.offset = dayjs(this.pkg.starts_at).week() - dayjs().week();
       }
 
-      // TODO: This doesn't work in combination with applyBookings :(
-      // if (start.isSameOrBefore(dayjs())) {
-      //   start = dayjs().hour(...this.pkg.opens_at.split(':'))
-      // }
+      let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.pkg.opens_at.split(':'))
+      let end = dayjs().endOf('week').add(this.offset, 'weeks').hour(...this.pkg.closes_at.split(':'))
 
       if (end.isAfter(this.pkg.ends_at)) {
         end = dayjs(this.pkg.ends_at).hour(...this.pkg.closes_at.split(':'))
@@ -348,6 +343,7 @@ export default {
         }
 
         week.push(day)
+
         pointer = pointer.hour(...this.pkg.opens_at.split(':')).add(1, 'day')
         endOfDay = pointer.hour(...this.pkg.closes_at.split(':'))
       }

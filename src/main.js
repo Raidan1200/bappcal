@@ -21,6 +21,7 @@ import isBetween from 'dayjs/plugin/isBetween'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import dayOfYear from 'dayjs/plugin/dayOfYear'
+import weekOfYear from 'dayjs/plugin/weekOfYear'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -31,5 +32,6 @@ dayjs.extend(isBetween)
 dayjs.extend(isSameOrBefore)
 dayjs.extend(isSameOrAfter)
 dayjs.extend(dayOfYear)
+dayjs.extend(weekOfYear)
 
 createApp(App).mount('#app')
