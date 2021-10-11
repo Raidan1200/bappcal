@@ -22,6 +22,7 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import dayOfYear from 'dayjs/plugin/dayOfYear'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
+import weekday from 'dayjs/plugin/weekday'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -33,5 +34,6 @@ dayjs.extend(isSameOrBefore)
 dayjs.extend(isSameOrAfter)
 dayjs.extend(dayOfYear)
 dayjs.extend(weekOfYear)
+dayjs.extend(weekday)
 
 createApp(App).mount('#app')

@@ -1,5 +1,7 @@
 <template>
   <div class="rounded-xl p-4 bg-gray-100 flex justify-center">
+    <div v-if="packageClosed()" class="text-2xl">Buchung zur Zeit nicht möglich.</div>
+
     <!-- Loading -->
     <!-- TODO: Placement -->
     <div v-if="loading" class="absolute loader ease-linear rounded-full border-8 border-t-8 border-gray-200 flex justify-center align-middle h-24 w-24"></div>
@@ -219,6 +221,10 @@ export default {
     }
   },
   methods: {
+    packageClosed() {
+      return dayjs().isAfter(this.pkg.ends_at)
+    },
+
     // Interface
     updateEndsAt(e) {
       this.booking.ends_at = this.booking.ends_at?.hour(e.target.value) || dayjs(this.pkg.closes_at)
@@ -233,10 +239,12 @@ export default {
     updateTimeFromCalendar(date) {
       if (this.setTime === 'start') {
         this.booking.starts_at = date
-        // this.starts_at = date.hour()
+        this.starts_at = date.hour()
         this.booking.ends_at = date
+        this.ends_at = date.hour()
       } else {
         this.booking.ends_at = this.booking.starts_at.hour(date.hour())
+        this.ends_at = date.hour()
         this.maybeSwitchStartAndEnd()
       }
       this.toggleStartEndTime()
@@ -258,6 +266,8 @@ export default {
         const tmp = this.booking.ends_at
         this.booking.ends_at = this.booking.starts_at
         this.booking.starts_at = tmp
+        this.starts_at = this.booking.starts_at.hour()
+        this.ends_at = this.booking.ends_at.hour()
       }
     },
     updateQuantity(e) {
@@ -315,16 +325,34 @@ export default {
       this.$emit('place-booking', null)
     },
     makeWeek() {
+      let h, m, s
+
+      // TODO: Check if package is offered in the future or not
+
       if (!this.offset && dayjs().isBefore(this.pkg.starts_at)) {
         this.offset = dayjs(this.pkg.starts_at).week() - dayjs().week();
       }
 
-      let start = dayjs().startOf('week').add(this.offset, 'weeks').hour(...this.pkg.opens_at.split(':'))
-      let end = dayjs().endOf('week').add(this.offset, 'weeks').hour(...this.pkg.closes_at.split(':'))
+      let start = dayjs().startOf('week').add(this.offset, 'weeks')
+      let end = dayjs().endOf('week').add(this.offset, 'weeks')
+
+      if (start.isBefore(this.pkg.starts_at)) {
+        start = dayjs(this.pkg.starts_at);
+      }
+
+      if (start.isBefore(dayjs())) {
+        start = dayjs();
+      }
 
       if (end.isAfter(this.pkg.ends_at)) {
         end = dayjs(this.pkg.ends_at).hour(...this.pkg.closes_at.split(':'))
       }
+
+      [h, m, s] = this.pkg.opens_at.split(':')
+      start = start.hour(h).minute(m).second(s);
+
+      [h, m, s] = this.pkg.closes_at.split(':')
+      end = end.hour(h).minute(m).second(s)
 
       const week = []
       let pointer = start.clone()
@@ -374,7 +402,7 @@ export default {
       while (pointer.isSameOrBefore(dayjs(booking.ends_at), 'minute')) {
         let indexDay, indexHour
         if (pointer.isSameOrAfter(pointer.hour(this.pkg.opens_at.substring(0, 2)), 'minute')) {
-          indexDay = (pointer.day() + 6) % 7
+          indexDay = (pointer.day() + 6) % 7 - this.calendar[0][0].datetime.weekday()
           indexHour = pointer.subtract(this.pkg.opens_at.substring(0, 2), 'hours').hour()
           if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
             const hour = this.calendar[indexDay][indexHour]
