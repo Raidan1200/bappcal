@@ -184,7 +184,6 @@ export default {
     }
   },
   async mounted() {
-      await this.fetchBookings()
       this.makeCalendar()
   },
   watch: {
@@ -305,8 +304,9 @@ export default {
     },
 
     // Calendar
-    makeCalendar() {
+    async makeCalendar() {
       this.makeWeek()
+      await this.fetchBookings()
       this.applyBookings()
       if (this.booking.starts_at && this.booking.ends_at) {
         this.applyBooking(this.booking)
