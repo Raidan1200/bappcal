@@ -162,7 +162,7 @@ export default {
   data() {
     return {
       loading: false,
-      bookings: null,
+      bookings: [],
       calendar: null,
       offset: 0,
       setTime: 'start',
@@ -186,6 +186,8 @@ export default {
     }
   },
   async mounted() {
+      this.makeCalendar()
+      await this.fetchBookings()
       this.makeCalendar()
   },
   watch: {
@@ -316,7 +318,6 @@ export default {
     // Calendar
     async makeCalendar() {
       this.makeWeek()
-      await this.fetchBookings()
       this.applyBookings()
       if (this.booking.starts_at && this.booking.ends_at) {
         this.applyBooking(this.booking)
