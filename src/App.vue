@@ -92,7 +92,7 @@
           <h2 class="mb-4 text-2xl">Überprüfen Sie Ihre Buchung</h2>
           <ul class="text-xl">
             <li>{{ formatBookingData(selectedBooking) }} : {{ selectedPkg.name }} für {{ selectedBooking.quantity }} Personen</li>
-            <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).pkgs[0].name }}</li>
+            <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).packages[0].name }}</li>
           </ul>
         </div>
         <div
