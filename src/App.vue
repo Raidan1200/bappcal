@@ -113,13 +113,15 @@
       </div>
       <div
         v-show="complete"
-        class="m-8"
+        class="flex flex-col items-center justify-center"
       >
-        Vielen Dank für ihre Buchung!
+        <div class="text-2xl mt-12">
+          Vielen Dank für ihre Buchung!
+        </div>
 
         <button
           @click="startFromScratch()"
-          class="px-4 py-1 mb-2 rounded-xl bg-blue-200 hover:bg-blue-300"
+          class="block px-4 py-1 mt-8 mb-12 rounded-xl bg-blue-200 hover:bg-blue-300"
         >
           Neue Buchung
         </button>
