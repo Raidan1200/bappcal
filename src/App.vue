@@ -33,7 +33,6 @@
             zurück
           </button>
         </div>
-        <!-- <h2 class="text-2xl">{{ selectedRoom.name }}</h2> -->
         <div
           v-if="selectedRoom.id === 1"
           class="md:flex md:space-x-4"
@@ -85,7 +84,7 @@
       </div>
 
       <!-- Step 4: Calendar-Dates have been chosen -->
-      <!-- TODO: "The Horror! THE HORROR!" ... by Joseph Conrad, good writer, bad coder -->
+      <!-- "The Horror! THE HORROR!" ... by Joseph Conrad, good writer, bad coder -->
       <div
         v-if="selectedRoom && selectedPkg && selectedBooking && (!addCurling || addCurling && curlingBooking)"
       >
@@ -111,6 +110,19 @@
         <BappCustomerForm
           @customerCompleted="submitBooking($event)"
         />
+      </div>
+      <div
+        v-show="complete"
+        class="m-8"
+      >
+        Vielen Dank für ihre Buchung!
+
+        <button
+          @click="startFromScratch()"
+          class="px-4 py-1 mb-2 rounded-xl bg-blue-200 hover:bg-blue-300"
+        >
+          Neue Buchung
+        </button>
       </div>
     </div>
   </div>
@@ -141,9 +153,11 @@ export default {
       selectedRoom: null,
       selectedPkg: null,
       selectedBooking: null,
-      addCurling: false,
       curlingBooking: null,
+
+      addCurling: false,
       showCustomerForm: false,
+      complete: false,
     }
   },
   async mounted() {
@@ -217,12 +231,21 @@ export default {
     },
     async submitBooking(customer) {
       const bookings = this.collectBookings()
-      const response = await axios.post(`venues/${this.venue.id}/orders`, {
+      await axios.post(`venues/${this.venue.id}/orders`, {
         bookings,
         customer
       })
 
-      console.log(response)
+      this.complete = true
+      this.addCurling = false
+      this.showCustomerForm = false
+      this.selectedRoom = null
+      this.selectedBooking = null
+    },
+
+    startFromScratch() {
+      this.complete = false
+      this.selectedPkg = null
     }
   },
 }
