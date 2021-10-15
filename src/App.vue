@@ -206,7 +206,7 @@ export default {
       this.showCustomerForm = false
     },
     formatBookingData(booking) {
-      return `${booking.starts_at.format('dddd, D.M.')} von ${booking.starts_at.format('HH:mm')} bis ${booking.ends_at.add(1, 'hour').format('HH:mm')}`
+      return `${booking.starts_at.format('dddd, D.M.')} von ${booking.starts_at.format('HH:mm')} bis ${booking.ends_at.format('HH:mm')}`
     },
     collectBookings() {
       const bookings = [{

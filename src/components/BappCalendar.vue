@@ -391,9 +391,9 @@ export default {
       this.bookings = bookings.data
     },
     applyBookings() {
-      this.bookings.forEach(booking => this.applyBooking(booking))
+      this.bookings.forEach(booking => this.applyBooking(booking, true))
     },
-    applyBooking(booking) {
+    applyBooking(booking, includeEnd) {
       this.error = ''
       if (this.booking.quantity < this.pkg.min_occupancy) {
         this.error = this.errors.minOccupancyError
@@ -407,7 +407,9 @@ export default {
           indexHour = pointer.subtract(this.pkg.opens_at.substring(0, 2), 'hours').hour()
           if (indexDay < this.calendar.length && indexHour < this.calendar[indexDay].length) {
             const hour = this.calendar[indexDay][indexHour]
-            hour.free -= booking.quantity
+            if (pointer.isBefore(dayjs(booking.ends_at), 'minute') || !includeEnd) {
+              hour.free -= booking.quantity
+            }
             if (hour.free < this.pkg.min_occupancy) {
               hour.color = 'bg-red-200'
             }
