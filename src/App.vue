@@ -183,8 +183,6 @@ export default {
       if (room.id === 2) {
         this.selectPkg(this.room(2).packages[0])
       }
-
-      console.log('room ' + room.name + ' selected')
     },
     selectPkg(pkg) {
       this.selectedPkg = pkg

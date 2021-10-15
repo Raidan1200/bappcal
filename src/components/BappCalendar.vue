@@ -425,6 +425,7 @@ export default {
       }
     },
     placeBooking() {
+      this.booking.ends_at = dayjs(this.booking.ends_at).add(1, 'hour')
       this.$emit('place-booking', this.booking)
       this.validated = false
     }
