@@ -1,6 +1,6 @@
 <template>
   <div class="sm:m-6 sm:p-6 rounded-xl bg-white">
-    <h1 class="sm:text-4xl text-3xl mb-4">{{ venue.name }} Buchungsportal</h1>
+    <!-- <h1 class="sm:text-4xl text-3xl mb-4">{{ venue.name }} Buchungsportal</h1> -->
     <!-- Loading -->
     <div v-if="loading">Lade Daten...</div>
 
@@ -64,7 +64,7 @@
           :room="selectedRoom"
           :pkg="selectedPkg"
           @placeBooking="selectedBooking = $event"
-          :showNumbers="showNumbers"
+          :debug="debug"
         />
 
         <!-- If room 1 has been selected (Hüttenrestaurant)
@@ -83,7 +83,7 @@
             :room="room(2)"
             :pkg="room(2).packages[0]"
             @placeBooking="curlingBooking = $event"
-            :showNumbers="showNumbers"
+            :debug="debug"
           />
         </div>
       </div>
@@ -168,13 +168,13 @@ export default {
       showCustomerForm: false,
       complete: false,
 
-      showNumbers: false,
+      debug: false,
     }
   },
   async mounted() {
     const app = document.getElementById('app')
 
-    this.showNumbers = app.classList.contains('numbers')
+    this.debug = app.classList.contains('debug')
 
     try {
       const venue = await axios.get('config')

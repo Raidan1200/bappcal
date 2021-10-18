@@ -70,7 +70,7 @@
             :class="hour.color"
           >
           <span
-            v-if="showNumbers"
+            v-if="debug"
             class="hidden sm:block"
           >
             {{ hour.free }}
@@ -160,7 +160,7 @@ export default {
       type: Object,
       required: true,
     },
-    showNumbers: {
+    debug: {
       type: Boolean,
       default: false,
     }
