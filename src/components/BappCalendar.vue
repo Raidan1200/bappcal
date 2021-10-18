@@ -69,8 +69,10 @@
             class="px-2 text-center hover:bg-gray-200 sm:border-none border border-gray-400 "
             :class="hour.color"
           >
-            <!-- <div class="text-gray-400">{{ hour.datetime.format('HH:mm') }}</div> -->
-          <span class="hidden sm:block">
+          <span
+            v-if="showNumbers"
+            class="hidden sm:block"
+          >
             {{ hour.free }}
           </span>
           </td>
@@ -158,6 +160,10 @@ export default {
       type: Object,
       required: true,
     },
+    showNumbers: {
+      type: Boolean,
+      default: false,
+    }
   },
   data() {
     return {

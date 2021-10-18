@@ -10,21 +10,22 @@
     <!-- OK ... Go go go -->
     <div v-else>
 
-      <!-- Step 1: Nothing has been selected -->
+      <!-- Step 1: Nothing has been selected
+             Show room selection -->
       <div
         v-if="!selectedRoom && !selectedPkg"
         class="md:flex md:space-x-4"
       >
         <!-- Hüttenrestaurant  -->
         <BappRoom @selectRoom="selectRoom($event)" class="flex-1" :room="room(1)" />
-        <!-- Curlingband -->
+        <!-- Curlingbahn -->
         <BappRoom @selectRoom="selectRoom($event)" class="flex-1" :room="room(2)" />
       </div>
 
-      <!-- Step 2: Room has been selected -->
-      <div
-        v-if="selectedRoom && !selectedPkg"
-      >
+      <!-- Step 2: Room has been selected
+             Show package selection
+             If room 2 has been selected package 3 gets selected automatically -->
+      <div v-if="selectedRoom && !selectedPkg" >
         <div>
           <button
             @click="deselectRoom()"
@@ -44,7 +45,8 @@
         </div>
       </div>
 
-      <!-- Step 3: Room and Pkg have been selected -->
+      <!-- Step 3: Room and Pkg have been selected
+             Show Calendar -->
       <div v-if="selectedRoom && selectedPkg">
         <div>
           <button
@@ -62,9 +64,11 @@
           :room="selectedRoom"
           :pkg="selectedPkg"
           @placeBooking="selectedBooking = $event"
+          :showNumbers="showNumbers"
         />
 
-        <!-- For Hüttenrestaurant also show Curling-Calendar -->
+        <!-- If room 1 has been selected (Hüttenrestaurant)
+               show a checkbox to combine it with room 2 (Curlingbahn) -->
         <div
           v-if="selectedRoom.id === 1"
           class="p-4"
@@ -79,14 +83,17 @@
             :room="room(2)"
             :pkg="room(2).packages[0]"
             @placeBooking="curlingBooking = $event"
+            :showNumbers="showNumbers"
           />
         </div>
       </div>
 
-      <!-- Step 4: Calendar-Dates have been chosen -->
+      <!-- Step 4: A package, date and time have been selected,
+             possibly combined with Curling and date
+      -->
       <!-- "The Horror! THE HORROR!" ... by Joseph Conrad, good writer, bad coder -->
       <div
-        v-if="selectedRoom && selectedPkg && selectedBooking && (!addCurling || addCurling && curlingBooking)"
+        v-if="selectedBooking && (!addCurling || addCurling && curlingBooking)"
       >
         <div class="p-4 my-4 bg-gray-100 rounded-xl">
           <h2 class="mb-4 text-2xl">Überprüfen Sie Ihre Buchung</h2>
@@ -160,9 +167,15 @@ export default {
       addCurling: false,
       showCustomerForm: false,
       complete: false,
+
+      showNumbers: false,
     }
   },
   async mounted() {
+    const app = document.getElementById('app')
+
+    this.showNumbers = app.classList.contains('numbers')
+
     try {
       const venue = await axios.get('config')
       this.venue = venue.data
@@ -196,6 +209,7 @@ export default {
         this.selectedRoom = null
       }
 
+      this.selectedBooking = null
       this.addCurling = false
       this.showCustomerForm = false
     },
