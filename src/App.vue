@@ -98,7 +98,12 @@
         <div class="p-4 my-4 bg-gray-100 rounded-xl">
           <h2 class="mb-4 text-2xl">Überprüfen Sie Ihre Buchung</h2>
           <ul class="text-xl">
-            <li>{{ formatBookingData(selectedBooking) }} : {{ selectedPkg.name }} für {{ selectedBooking.quantity }} Personen</li>
+            <li>{{ formatBookingData(selectedBooking) }} : {{ selectedPkg.name }} für {{ selectedBooking.quantity }}
+              <span v-if="selectedPkg.id !== 3 && selectedBooking.quantity === 1">Person</span>
+              <span v-if="selectedPkg.id !== 3 && selectedBooking.quantity > 1">Personen</span>
+              <span v-if="selectedPkg.id === 3 && selectedBooking.quantity === 1">Bahn</span>
+              <span v-if="selectedPkg.id === 3 && selectedBooking.quantity > 1">Bahnen</span>
+            </li>
             <li v-if="addCurling">{{ formatBookingData(curlingBooking) }} : {{ curlingBooking.quantity }} Bahnen auf der {{ room(2).packages[0].name }}</li>
           </ul>
         </div>
