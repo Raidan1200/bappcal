@@ -3,7 +3,6 @@
     <div v-if="packageClosed()" class="text-2xl">Buchung zur Zeit nicht möglich.</div>
 
     <!-- Loading -->
-    <!-- TODO: Placement -->
     <div v-if="loading" class="absolute loader ease-linear rounded-full border-8 border-t-8 border-gray-200 flex justify-center align-middle h-24 w-24"></div>
 
     <!-- Bookings have been loaded, calendar has been built -->
@@ -66,8 +65,9 @@
             v-for="(hour, hIdx) in day"
             :key="hIdx"
             @click="updateTimeFromCalendar(hour.datetime)"
-            class="px-2 text-center hover:bg-gray-200 sm:border-none border border-gray-400 "
+            class="px-2 text-center hover:bg-gray-200 border border-gray-400 "
             :class="hour.color"
+            :title="hour.free"
           >
           <span
             v-if="debug"
@@ -99,7 +99,7 @@
           </div>
           <div>
             <label for="ends_at">Bis</label>
-            <!-- TODO: value input ... this cannot be right -->
+            <!-- TODO: value input ... this is wrong -->
             <input
               type="number"
               name="ends_at"
@@ -334,8 +334,6 @@ export default {
     makeWeek() {
       let h, m, s
 
-      // TODO: Check if package is offered in the future or not
-
       if (!this.offset && dayjs().isBefore(this.pkg.starts_at)) {
         this.offset = dayjs(this.pkg.starts_at).week() - dayjs().week();
       }
@@ -418,6 +416,9 @@ export default {
             }
             if (hour.free < this.pkg.min_occupancy) {
               hour.color = 'bg-red-200'
+            } else if (hour.free < this.pkg.capacity) {
+              // TODO TODO THIS IS NEW
+              hour.color = 'bg-yellow-400'
             }
             if (booking.color) {
               if (hour.free >= 0) {

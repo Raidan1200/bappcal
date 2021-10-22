@@ -2,10 +2,20 @@
   <div class="sm:m-6 sm:p-6 rounded-xl bg-white">
     <!-- <h1 class="sm:text-4xl text-3xl mb-4">{{ venue.name }} Buchungsportal</h1> -->
     <!-- Loading -->
-    <div v-if="loading">Lade Daten...</div>
+    <div v-if="loading">
+      Bitte warten ...
+    </div>
 
     <!-- Error -->
-    <div v-else-if="error">Da ist wohl etwas schief gelaufen. Bitte kontaktieren Sie uns telefonisch.</div>
+    <div v-else-if="error">
+      Da ist wohl etwas schief gelaufen. Bitte kontaktieren Sie uns telefonisch.
+      <button
+        @click="startFromScratch()"
+        class="block px-4 py-1 mt-8 mb-12 rounded-xl bg-blue-200 hover:bg-blue-300"
+      >
+        Zurück zum Anfang
+      </button>
+    </div>
 
     <!-- OK ... Go go go -->
     <div v-else>
@@ -47,7 +57,7 @@
 
       <!-- Step 3: Room and Pkg have been selected
              Show Calendar -->
-      <div v-if="selectedRoom && selectedPkg">
+      <div v-if="!complete && selectedRoom && selectedPkg">
         <div>
           <button
             @click="deselectPkg(selectedPkg)"
@@ -121,6 +131,7 @@
       >
         <BappCustomerForm
           @customerCompleted="submitBooking($event)"
+          :loading="loading"
         />
       </div>
       <div
@@ -170,7 +181,6 @@ export default {
       curlingBooking: null,
 
       addCurling: false,
-      showCustomerForm: false,
       complete: false,
 
       debug: false,
@@ -216,13 +226,11 @@ export default {
 
       this.selectedBooking = null
       this.addCurling = false
-      this.showCustomerForm = false
     },
     deselectRoom() {
       this.selectedPkg = null
       this.selectedRoom = null
       this.addCurling = false
-      this.showCustomerForm = false
     },
     formatBookingData(booking) {
       return `${booking.starts_at.format('dddd, D.M.')} von ${booking.starts_at.format('HH:mm')} bis ${booking.ends_at.format('HH:mm')}`
@@ -250,21 +258,40 @@ export default {
     },
     async submitBooking(customer) {
       const bookings = this.collectBookings()
-      await axios.post(`venues/${this.venue.id}/orders`, {
-        bookings,
-        customer
-      })
 
+      this.loading = true
+
+      try {
+        const res = await axios.post(`venues/${this.venue.id}/orders`, {
+          bookings,
+          customer,
+        }, {
+          timeout: 10000,
+        })
+
+        console.log(res)
+        if (res.status !== 200) {
+          this.error = true;
+        }
+      } catch (error) {
+        this.error = true;
+      }
+
+      this.loading = false
       this.complete = true
-      this.addCurling = false
-      this.showCustomerForm = false
-      this.selectedRoom = null
-      this.selectedBooking = null
     },
 
     startFromScratch() {
+      this.loading = false
+      this.error = false
       this.complete = false
+
+      this.selectedRoom = null
+      this.selectedBooking = null
       this.selectedPkg = null
+
+      this.addCurling = false
+      this.curlingBooking = null
     }
   },
 }
